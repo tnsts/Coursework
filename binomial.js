@@ -22,9 +22,7 @@ BinomialHeap.prototype.isEmpty = function() {
 };
 
 BinomialHeap.prototype.findMinimum = function() {
-  if (!this.head) {
-    return null;
-  }
+  if (!this.head) return null;
 
   let min = Infinity;
 
@@ -42,54 +40,16 @@ BinomialHeap.prototype.findMinimum = function() {
   return current;
 };
 
-function binomialLink(worst, better) {
+const binomialLink = (worst, better) => {
   worst.parent = better;
   worst.sibling = better.child;
   better.child = worst;
   better.degree++;
-}
-
-BinomialHeap.prototype.union = function(h) {
-  const heap = new BinomialHeap();
-  heap.head = merge(this, h);
-
-  if (!heap.head) {
-    return null;
-  }
-
-  let previous = null;
-  let current = heap.head;
-  let next = current.sibling;
-
-  while (next) {
-    if (current.degree !== next.degree || (next.sibling && next.sibling.degree === current.degree)) {
-      previous = current;
-      current = next;
-    } else if (current.key <= next.key) {
-      current.sibling = next.sibling;
-      binomialLink(next, current);
-    } else {
-      if (!previous) {
-        heap.head = next;
-      } else {
-        previous.sibling = next;
-      }
-      binomialLink(current, next);
-      current = next;
-    }
-    next = current.sibling;
-  }
-
-  this.head = heap.head;
 };
 
-function merge(h1, h2) {
-  if (!h1.head) {
-    return h2.head;
-  }
-  if (!h2.head) {
-    return h1.head;
-  }
+const merge = (h1, h2) => {
+  if (!h1.head) return h2.head;
+  if (!h2.head) return h1.head;
 
   const heap = new BinomialHeap();
   let next1 = h1.head;
@@ -119,7 +79,39 @@ function merge(h1, h2) {
   tail.sibling = next1 || next2;
 
   return heap.head;
-}
+};
+
+BinomialHeap.prototype.union = function(h) {
+  const heap = new BinomialHeap();
+  heap.head = merge(this, h);
+
+  if (!heap.head) return null;
+
+  let previous;
+  let current = heap.head;
+  let next = current.sibling;
+
+  while (next) {
+    const sibling = next.sibling;
+    const isCurrNext = current.degree !== next.degree;
+    if (isCurrNext || (sibling && sibling.degree === current.degree)) {
+      previous = current;
+      current = next;
+    } else if (current.key <= next.key) {
+      current.sibling = next.sibling;
+      binomialLink(next, current);
+    } else {
+      if (!previous) heap.head = next;
+      else previous.sibling = next;
+
+      binomialLink(current, next);
+      current = next;
+    }
+    next = current.sibling;
+  }
+
+  this.head = heap.head;
+};
 
 BinomialHeap.prototype.insert = function(key, value) {
   const heap = new BinomialHeap();
@@ -128,28 +120,9 @@ BinomialHeap.prototype.insert = function(key, value) {
   this.union(heap);
 };
 
-BinomialHeap.prototype.extractMinimum = function() {
-  if (!this.head) {
-    return null;
-  }
-
-  const min = this.findMinimum();
-  let prev = this.head;
-
-  while (prev && prev.sibling !== min) {
-    prev = prev.sibling;
-  }
-
-  excludeRoot(this, min, prev);
-  return min;
-};
-
-function excludeRoot(h, root, previous) {
-  if (root === h.head) {
-    h.head = root.sibling;
-  } else {
-    previous.sibling = root.sibling;
-  }
+const excludeRoot = (h, root, previous) => {
+  if (root === h.head) h.head = root.sibling;
+  else previous.sibling = root.sibling;
 
   let head;
   let child = root.child;
@@ -166,17 +139,42 @@ function excludeRoot(h, root, previous) {
   heap.head = head;
 
   h.union(heap);
-}
+};
+
+BinomialHeap.prototype.extractMinimum = function() {
+  if (!this.head) return null;
+
+  const min = this.findMinimum();
+  let prev = this.head;
+
+  while (prev && prev.sibling !== min) {
+    prev = prev.sibling;
+  }
+
+  excludeRoot(this, min, prev);
+  return min;
+};
+
+const search = (current, key) => {
+  let result = null;
+
+  if (current.key === key) return current;
+
+  if (current.child && !result) {
+    result = search(current.child, key);
+  }
+  if (current.sibling && !result) {
+    result = search(current.sibling, key);
+  }
+
+  return result;
+};
 
 BinomialHeap.prototype.decreaseKey = function(key, newKey) {
   const element = search(this.head, key);
 
-  if (!element) {
-    return;
-  }
-  if (newKey > element.key) {
-    return;
-  }
+  if (!element) return;
+  if (newKey > element.key) return;
 
   element.key = newKey;
   let current = element;
@@ -199,19 +197,5 @@ BinomialHeap.prototype.decreaseKey = function(key, newKey) {
 BinomialHeap.prototype.searchKey = function(key) {
   return search(this.head, key);
 };
-
-function search(current, key) {
-  let result = null;
-
-  if (current.key === key)
-    return current;
-
-  if (current.child && !result)
-    result = search(current.child, key);
-  if (current.sibling && !result)
-    result = search(current.sibling, key);
-
-  return result;
-}
 
 module.exports = BinomialHeap;
